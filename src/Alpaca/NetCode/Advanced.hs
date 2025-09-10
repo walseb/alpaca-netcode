@@ -90,7 +90,7 @@ import Prelude
 runClientWith ::
   forall world input.
   Flat input =>
-  -- | The server's host name or IP address e.g. @"localhost"@.
+  -- | The server's host name or IP address e.g. @"127.0.0.1"@.
   HostName ->
   -- | The server's port number e.g. @"8111"@.
   ServiceName ->

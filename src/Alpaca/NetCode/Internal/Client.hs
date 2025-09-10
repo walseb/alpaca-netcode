@@ -47,7 +47,7 @@ import Data.Maybe (catMaybes, fromMaybe, isJust)
 import qualified Data.Set as S
 import Flat
 import Prelude
-
+import qualified Debug.Trace as Tr 
 
 -- | A Client. You'll generally obtain this via 'Alpaca.NetCode.runClient'.
 data Client world input = Client
@@ -402,19 +402,25 @@ runClientWith' sendToServer' rcvFromServer' simNetConditionsMay clientConfig inp
           -- sending the input to the server immediately, but when `targetTick <=
           -- lastTick`, then the input will be ghosted!
           \newInput -> do
+            -- Tr.trace "1" (pure ())
             stopped <- atomically $ readTVar stoppedTVar
+            -- Tr.trace "2" (pure ())
             when (not stopped) $ do
               -- We submit events as soon as we expect the server to be on a future
               -- tick. Else we just store the new input.
+              -- Tr.trace "3" (pure ())
               targetTick <- estimateServerTickPlusLatencyPlusBufferPlus (ccFixedInputLatency clientConfig)
+              -- Tr.trace "4" (pure ())
               join $
                 atomically $ do
+                  -- Tr.trace "5" (pure ())
                   lastTick <-
                     ( \case
                         [] -> Tick 0
                         (t, _) : _ -> t
                       )
                       <$> readTVar recentSubmittedInputsTVar
+                  -- Tr.trace "6" (pure ())
                   if targetTick > lastTick
                     then do
                       -- Store our own inputs as a hint so we get 0 latency. This is

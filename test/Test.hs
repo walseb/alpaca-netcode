@@ -143,8 +143,8 @@ main = defaultMain $ testGroup "alpaca-netcode" $ let
         let port = "8888"
         test
           (runServerWith port)
-          (runClientWith "localhost" port)
-          (runClientWith "localhost" port)
+          (runClientWith "127.0.0.1" port)
+          (runClientWith "127.0.0.1" port)
     , testCase "clientStop" $ do
         toServer <- newChan
         toClient <- newChan

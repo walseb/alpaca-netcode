@@ -27,7 +27,7 @@ import Control.Concurrent.STM
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe)
 import Prelude
-
+import qualified Debug.Trace as Tr 
 
 -- TODO make all these constants part of ClientConfig
 
@@ -123,14 +123,22 @@ initializeClockSync tickTime getTime = do
       -- received by the server plus some extraTime time.
       estimateServerTickPlusLatencyPlusBufferPlus :: Float -> IO Tick
       estimateServerTickPlusLatencyPlusBufferPlus extraTime = do
+        -- Tr.trace "time 1" (pure ())
         clientTime <- getTime
+        -- Tr.trace "time 2" (pure ())
         atomically $ do
+          -- Tr.trace "time 3" (pure ())
           cs <- readTVar clockSyncTVar
+          -- Tr.trace "time 4" (pure ())
           anaMay <- analytics' cs clientTime extraTime
+          -- Tr.trace "time 5" (pure ())
           case anaMay of
             Nothing -> retry
+            -- Nothing -> Tr.trace "time 6" retry
             Just (_estServerTime, dilatedEstServerTime, _ping, newCS) -> do
+              -- Tr.trace "time 7" (pure ())
               writeTVar clockSyncTVar newCS
+              -- Tr.trace "time 8" (pure ())
               return (floor (dilatedEstServerTime / tickTime))
 
       analytics :: IO (Maybe (Float, Float))
