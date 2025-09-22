@@ -204,7 +204,7 @@ runClientWith' sendToServer' rcvFromServer' simNetConditionsMay clientConfig inp
   let estimateServerTickPlusLatencyPlusBuffer = estimateServerTickPlusLatencyPlusBufferPlus 0
 
   -- Keep trying to connect to the server.
-  heartbeatTid <- forkIO $
+  heartbeatTid <- forkIO' $
     forever $ do
       clientSendTime <- getTime
       isConnected <- isJust <$> atomically (readTVar myPlayerIdTVar)
@@ -216,7 +216,7 @@ runClientWith' sendToServer' rcvFromServer' simNetConditionsMay clientConfig inp
           else 50000 -- 0.05 seconds
 
   -- Main message processing loop
-  msgLoopTid <- forkIO $
+  msgLoopTid <- forkIO' $
     forever $ do
       msg <- rcvFromServer
       case msg of

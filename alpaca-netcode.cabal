@@ -42,11 +42,11 @@ library
   other-modules:
       Alpaca.NetCode.Internal.Client
     , Alpaca.NetCode.Internal.ClockSync
-    , Alpaca.NetCode.Internal.Common
     , Alpaca.NetCode.Internal.Server
   exposed-modules:
       Alpaca.NetCode
     , Alpaca.NetCode.Advanced
+    , Alpaca.NetCode.Internal.Common
   build-depends:       base >= 4.9
                      , bytestring
                      , containers

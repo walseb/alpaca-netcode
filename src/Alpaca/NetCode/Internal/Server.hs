@@ -125,7 +125,7 @@ runServerWith' sendToClient' recvFromClient' simNetConditionsMay serverConfig in
   -- perceive the lag in authoritative inputs.
 
   -- Main message processing loop
-  msgProcessingTID <- forkIO $
+  msgProcessingTID <- forkIO' $
     forever $ do
       (msg, sender) <- recvFromClient
 
@@ -245,7 +245,7 @@ runServerWith' sendToClient' recvFromClient' simNetConditionsMay serverConfig in
   debugStrLn "Client connected. Starting game."
 
   -- Disconnect players after a timeout
-  disconnectTID <- forkIO $
+  disconnectTID <- forkIO' $
     forever $ do
       -- Find next possilbe time to disconnect a player
       oldestMsgRcvTime <- atomically (minimum . fmap lastMesgRcvTime . M.elems <$> readTVar playersTVar)
@@ -266,7 +266,7 @@ runServerWith' sendToClient' recvFromClient' simNetConditionsMay serverConfig in
       when (not (M.null kickedPlayers)) $ debugStrLn $ "Disconnect players due to timeout: " ++ show [pid | PlayerData{playerId = PlayerId pid} <- M.elems kickedPlayers]
 
   -- Main "simulation" loop
-  simTID <- forkIO $
+  simTID <- forkIO' $
     forever $ do
       -- Calculate target tick according to current time
       currTime <- getTime

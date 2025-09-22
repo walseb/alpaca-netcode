@@ -24,7 +24,7 @@
 -- | Rollback and replay based game networking
 module Alpaca.NetCode.Internal.Common where
 
-import Control.Concurrent (forkIO, newChan, readChan, threadDelay, writeChan)
+import Control.Concurrent (forkIO, newChan, readChan, threadDelay, writeChan, ThreadId)
 import Control.Concurrent.STM as STM
 import Control.Monad (forever, when)
 import Data.Hashable (Hashable)
@@ -37,7 +37,23 @@ import Data.Word (Word8)
 import Flat
 import System.Random (randomRIO)
 import Prelude
+import Control.Concurrent.MVar
+import System.IO.Unsafe (unsafePerformIO)
 
+threadsMVar :: MVar [ThreadId]
+threadsMVar = unsafePerformIO $ newMVar []
+{-# NOINLINE threadsMVar #-}
+
+threadsMVarAdd :: ThreadId -> IO ()
+threadsMVarAdd a = do 
+  mv <- takeMVar threadsMVar
+  putMVar threadsMVar (a : mv)
+  pure ()
+
+forkIO' a = do
+  thread <- forkIO a
+  threadsMVarAdd thread
+  pure thread
 
 -- Constants
 
@@ -52,8 +68,8 @@ maxRequestAuthInputs = 100
 
 -- | TODO I need some proper logging mechanism.
 debugStrLn :: String -> IO ()
-debugStrLn _ = return ()
-
+-- debugStrLn _ = return ()
+debugStrLn a = putStrLn ("Alpaca: " ++ a)
 
 -- This can be thought of as how far the authoritative simulation is behind the
 -- clients. Making this large does NOT affect latency. It DOES affect how far
@@ -138,12 +154,12 @@ simulateNetConditions doSendMsg doRecvMsg simMay = case simMay of
   Just (SimNetConditions ping jitter loss) -> do
     -- Start a thread that just writes received messages into a chan
     recvChan <- newChan
-    _recvThreadId <- forkIO $
+    _recvThreadId <- forkIO' $
       forever $ do
         msg <- doRecvMsg
         dropPacket <- (<= loss) <$> randomRIO (0, 1)
         when (not dropPacket) $ do
-          _ <- forkIO $ do
+          _ <- forkIO' $ do
             jitterT <- randomRIO (negate jitter, jitter)
             let latency = max 0 ((ping / 2) + jitterT)
             threadDelay (round $ latency * 1000000)
@@ -156,7 +172,7 @@ simulateNetConditions doSendMsg doRecvMsg simMay = case simMay of
           when (not dropPacket) $ do
             jitterT <- randomRIO (negate jitter, jitter)
             let latency = max 0 ((ping / 2) + jitterT)
-            _ <- forkIO $ do
+            _ <- forkIO' $ do
               threadDelay (round $ latency * 1000000)
               doSendMsg msg
             return ()

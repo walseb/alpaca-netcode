@@ -61,7 +61,9 @@ import Flat (
  )
 import Network.Run.UDP (runUDPServer)
 import Network.Socket (
-  AddrInfo (
+  setSockOpt
+  , SocketOption (..)
+  , AddrInfo (
     addrAddress,
     addrFamily,
     addrFlags,
@@ -124,10 +126,12 @@ runClientWith
     recvChan <- newChan
 
     -- UDP
-    _ <- forkIO $ do
+    _ <- forkIO' $ do
       runUDPClient' serverHostName serverPort $ \sock server -> do
+        -- setSockOpt sock ReuseAddr (1 :: Int) -- This has something to do with reserved ports being slow to reclaim.
+
         _ <-
-          forkIO $
+          forkIO' $
             writeDatagramContentsAsNetMsg (Just server) fst recvChan sock
         forever $ do
           msg <- readChan sendChan
@@ -192,9 +196,9 @@ runServerWith serverPort tickRate netConfig input0 = do
   recvChan <- newChan
 
   -- UDP
-  _ <- forkIO $ do
+  _ <- forkIO' $ do
     runUDPServer Nothing serverPort $ \sock -> do
-      _ <- forkIO $ writeDatagramContentsAsNetMsg Nothing id recvChan sock
+      _ <- forkIO' $ writeDatagramContentsAsNetMsg Nothing id recvChan sock
       forever $ do
         (msg, addr) <- readChan sendChan
         NBS.sendAllTo sock (flat msg) addr
