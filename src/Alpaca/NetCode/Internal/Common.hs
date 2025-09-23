@@ -69,7 +69,20 @@ maxRequestAuthInputs = 100
 -- | TODO I need some proper logging mechanism.
 debugStrLn :: String -> IO ()
 -- debugStrLn _ = return ()
-debugStrLn a = putStrLn ("Alpaca: " ++ a)
+debugStrLn a = do
+  v <- takeMVar debugStrLnLock
+  _ <- putMVar debugStrLnLock (a : v)
+  pure ()
+
+debugStrLnLock :: MVar [String]
+debugStrLnLock = unsafePerformIO $ newMVar []
+{-# NOINLINE debugStrLnLock #-}
+
+printingThread :: IO ()
+printingThread = do
+  as <- swapMVar debugStrLnLock []
+  sequence $ (\a -> putStrLn ("Alpaca: " ++ a)) <$> as
+  printingThread
 
 -- This can be thought of as how far the authoritative simulation is behind the
 -- clients. Making this large does NOT affect latency. It DOES affect how far
