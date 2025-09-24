@@ -40,6 +40,8 @@ import Prelude
 import Control.Concurrent.MVar
 import System.IO.Unsafe (unsafePerformIO)
 
+import qualified Debug.Trace as Tr 
+
 threadsMVar :: MVar [ThreadId]
 threadsMVar = unsafePerformIO $ newMVar []
 {-# NOINLINE threadsMVar #-}
@@ -68,7 +70,7 @@ maxRequestAuthInputs = 100
 
 -- | TODO I need some proper logging mechanism.
 debugStrLn :: String -> IO ()
--- debugStrLn _ = return ()
+-- debugStrLn _ = pure ()
 debugStrLn a = do
   v <- takeMVar debugStrLnLock
   _ <- putMVar debugStrLnLock (a : v)
@@ -80,8 +82,9 @@ debugStrLnLock = unsafePerformIO $ newMVar []
 
 printingThread :: IO ()
 printingThread = do
+  -- pure ()
   as <- swapMVar debugStrLnLock []
-  sequence $ (\a -> putStrLn ("Alpaca: " ++ a)) <$> as
+  sequence $ (\a -> Tr.trace ("Alpaca: " ++ a) (pure ())) <$> as
   printingThread
 
 -- This can be thought of as how far the authoritative simulation is behind the
