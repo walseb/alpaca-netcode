@@ -72,20 +72,26 @@ maxRequestAuthInputs = 100
 debugStrLn :: String -> IO ()
 -- debugStrLn _ = pure ()
 debugStrLn a = do
-  v <- takeMVar debugStrLnLock
-  _ <- putMVar debugStrLnLock (a : v)
-  pure ()
+  v <- tryTakeMVar debugStrLnLock
+  case v of 
+    Just v' -> do
+                _ <- putMVar debugStrLnLock (a : v')
+                pure ()
+    Nothing -> pure ()
 
 debugStrLnLock :: MVar [String]
-debugStrLnLock = unsafePerformIO $ newMVar []
+debugStrLnLock = unsafePerformIO $ newEmptyMVar 
 {-# NOINLINE debugStrLnLock #-}
 
 printingThread :: IO ()
 printingThread = do
-  -- pure ()
-  as <- swapMVar debugStrLnLock []
-  sequence $ (\a -> Tr.trace ("Alpaca: " ++ a) (pure ())) <$> as
-  printingThread
+  putMVar debugStrLnLock []
+  print
+  where
+    print = do
+      as <- swapMVar debugStrLnLock []
+      sequence $ (\a -> Tr.trace ("Alpaca: " ++ a) (pure ())) <$> as
+      print
 
 -- This can be thought of as how far the authoritative simulation is behind the
 -- clients. Making this large does NOT affect latency. It DOES affect how far
